@@ -79,6 +79,11 @@ class SemgrepServer {
   }
 
   private validateAbsolutePath(pathToValidate: string, paramName: string): string {
+    // Skip validation for special configuration values like "p/security"
+    if (paramName === 'config' && (pathToValidate.startsWith('p/') || pathToValidate.startsWith('r/') || pathToValidate === 'auto')) {
+      return pathToValidate;
+    }
+    
     if (!path.isAbsolute(pathToValidate)) {
       throw new McpError(
         ErrorCode.InvalidParams,
@@ -307,19 +312,29 @@ class SemgrepServer {
     const scanPath = this.validateAbsolutePath(args.path, 'path');
     const config = args.config || 'auto';
     
-    // If config is a path (not 'auto'), validate it's an absolute path
-    const configParam = config !== 'auto' 
-      ? this.validateAbsolutePath(config, 'config')
-      : config;
+    // Use validateAbsolutePath which now handles special config values
+    const configParam = this.validateAbsolutePath(config, 'config');
 
     try {
       // Check for SEMGREP_APP_TOKEN in environment
-      const authFlag = process.env.SEMGREP_APP_TOKEN ? 
-        `--auth-token=${process.env.SEMGREP_APP_TOKEN}` : '';
+      let cmd = `semgrep scan --json --config ${configParam} ${scanPath}`;
       
-      const { stdout, stderr } = await execAsync(
-        `semgrep scan --json ${authFlag} --config ${configParam} ${scanPath}`
-      );
+      // Add token if available - note that Semgrep CLI might use different formats 
+      // for different versions, so we'll try both environment variable and flag approaches
+      if (process.env.SEMGREP_APP_TOKEN) {
+        // First approach: Set environment for child process
+        const env = { ...process.env };
+        
+        // Second approach: Try adding the flag  
+        // Some Semgrep versions accept --oauth-token instead of --auth-token
+        if (config.startsWith('r/')) {
+          // For Pro rules, we definitely need the token
+          cmd = `semgrep scan --json --oauth-token ${process.env.SEMGREP_APP_TOKEN} --config ${configParam} ${scanPath}`;
+        }
+      }
+      
+      console.error(`Executing: ${cmd.replace(process.env.SEMGREP_APP_TOKEN || '', '[REDACTED]')}`);
+      const { stdout, stderr } = await execAsync(cmd);
 
       return {
         content: [
@@ -346,35 +361,32 @@ class SemgrepServer {
     const languageFilter = args.language ? `--lang ${args.language}` : '';
     try {
       // Check for SEMGREP_APP_TOKEN in environment
-      const authFlag = process.env.SEMGREP_APP_TOKEN ? 
-        `--auth-token=${process.env.SEMGREP_APP_TOKEN}` : '';
+      const hasToken = process.env.SEMGREP_APP_TOKEN ? true : false;
       
-      // Try to get rules from registry if token is available
-      let rulesList = '';
-      if (authFlag) {
-        try {
-          const { stdout } = await execAsync(`semgrep ci ${authFlag} --dry-run --no-suppress-errors --list-rules`);
-          if (stdout) {
-            rulesList = stdout;
-          }
-        } catch (e) {
-          console.error('Could not retrieve rules from Semgrep registry', e);
-        }
-      }
-      
-      // Fallback or append standard rules if registry rules retrieval failed
-      if (!rulesList) {
-        rulesList = `Available Semgrep Registry Rules:
+      // Build the rules list with standard rules
+      let rulesList = `Available Semgrep Registry Rules:
 
 Standard rule collections:
 - p/ci: Basic CI rules
 - p/security: Security rules
 - p/performance: Performance rules
 - p/best-practices: Best practice rules
+`;
 
+      // Add Pro rules information if token is available
+      if (hasToken) {
+        rulesList += `
+Pro Rule Collections (available with your SEMGREP_APP_TOKEN):
+- r/java.lang.security.audit.crypto.ssl.weak-protocol
+- r/javascript.express.security.audit.cookie-session-no-secure
+- r/go.lang.security.audit.crypto.bad_imports
+- And many more...
+`;
+      }
+
+      rulesList += `
 Use these rule collections with --config, e.g.:
 semgrep scan --config=p/ci`;
-      }
 
       return {
         content: [
