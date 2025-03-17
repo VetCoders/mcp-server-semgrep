@@ -1,7 +1,7 @@
 # MCP Server Semgrep
 [![smithery badge](https://smithery.ai/badge/@Szowesgad/mcp-server-semgrep)](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
-
-![MCP Server Semgrep Logo](./logo.svg)
+[![semgrep pro](https://semgrep.dev/docs/img/semgrep-icon-text-horizontal.svg)](https://semgrep.dev)
+[![MCP Server Semgrep Logo](./logo.svg)](https://github.com/Szowesgad/mcp-server-semgrep)
 
 ## About the Project
 
