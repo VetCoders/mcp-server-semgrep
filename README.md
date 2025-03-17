@@ -49,7 +49,7 @@ MCP Server Semgrep is a [Model Context Protocol](https://modelcontextprotocol.io
 
 ## Functions
 
-Semgrep MCP Server provides the following tools:
+MCP Server Semgrep provides the following tools:
 
 - **scan_directory**: Scanning source code for potential issues
 - **list_rules**: Displaying available rules and languages supported by Semgrep
@@ -76,7 +76,37 @@ Semgrep MCP Server provides the following tools:
 - Node.js v18+
 - TypeScript (for development)
 
-### Setup
+### Option 1: Install from NPM Registry (Recommended)
+
+```bash
+# Using npm
+npm install -g mcp-server-semgrep
+
+# Using pnpm
+pnpm add -g mcp-server-semgrep
+
+# Using yarn
+yarn global add mcp-server-semgrep
+```
+
+The package is also available on other registries:
+- [Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+- [MCP.so](https://mcp.so/@Szowesgad/mcp-server-semgrep)
+
+### Option 2: Install from GitHub
+
+```bash
+# Using npm
+npm install -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
+
+# Using pnpm
+pnpm add -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
+
+# Using yarn
+yarn global add git+https://github.com/Szowesgad/mcp-server-semgrep.git
+```
+
+### Option 3: Local Development Setup
 
 1. Clone the repository:
 ```bash
@@ -84,20 +114,46 @@ git clone https://github.com/Szowesgad/mcp-server-semgrep.git
 cd mcp-server-semgrep
 ```
 
-2. Install dependencies:
+2. Install dependencies (supports all major package managers):
 ```bash
+# Using pnpm (recommended)
 pnpm install
+
+# Using npm
+npm install
+
+# Using yarn
+yarn install
+```
+
+3. Build the project:
+```bash
+# Using pnpm
+pnpm run build
+
+# Using npm
+npm run build
+
+# Using yarn
+yarn build
 ```
 
 > **Note**: The installation process will automatically check for Semgrep availability. If Semgrep is not found, you'll receive instructions on how to install it.
 
-#### Semgrep Installation Options
+### Semgrep Installation Options
 
 Semgrep can be installed in several ways:
 
-- **PNPM (recommended)**: It's included as an optional dependency
+- **Via package managers**:
   ```bash
+  # Using pnpm
   pnpm add -g semgrep
+  
+  # Using npm
+  npm install -g semgrep
+  
+  # Using yarn
+  yarn global add semgrep
   ```
 
 - **Python pip**:
@@ -117,10 +173,10 @@ Semgrep can be installed in several ways:
   curl -sSL https://install.semgrep.dev | sh
   ```
 
-3. Build the project:
-```bash
-pnpm run build
-```
+- **Windows**:
+  ```bash
+  pip install semgrep
+  ```
 
 ## Integration with Claude Desktop
 

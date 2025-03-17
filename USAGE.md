@@ -1,6 +1,6 @@
 # Using MCP Server Semgrep
 
-This guide describes how to use the Semgrep MCP Server in your development workflow and highlights the transformative benefits it brings to code quality, security, and team collaboration.
+This guide describes how to use the MCP Server Semgrep in your development workflow and highlights the transformative benefits it brings to code quality, security, and team collaboration.
 
 ## Installation
 
@@ -10,7 +10,7 @@ First, make sure you have Node.js (v18+) installed. The server offers multiple w
 
 ```bash
 # Install from npm (once published)
-npm install -g semgrep-server
+npm install -g mcp-server-semgrep
 
 # Or directly from GitHub
 npm install -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
@@ -47,7 +47,7 @@ The server will automatically detect your Semgrep installation regardless of how
 ## Running the Server
 
 ```bash
-semgrep-mcp
+mcp-server-semgrep
 ```
 
 The server will start and listen on stdio, ready to accept MCP commands.

@@ -1,7 +1,7 @@
 {
-  "name": "semgrep-server",
+  "name": "mcp-server-semgrep",
   "version": "1.0.0",
-  "description": "MCP Server for Semgrep Integration",
+  "description": "MCP Server for Semgrep Integration - static code analysis with AI",
   "main": "build/index.js",
   "type": "module",
   "scripts": {
@@ -11,21 +11,36 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint 'src/**/*.ts'",
-    "postinstall": "node scripts/check-semgrep.js"
+    "postinstall": "node scripts/check-semgrep.js",
+    "prepare": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "semgrep",
     "static-analysis",
     "security",
-    "code-quality"
+    "code-quality",
+    "ai",
+    "claude",
+    "anthropic"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Maciej Gad <maciej.gad.github@gmail.com>",
+  "homepage": "https://github.com/Szowesgad/mcp-server-semgrep",
+  "bugs": {
+    "url": "https://github.com/Szowesgad/mcp-server-semgrep/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Szowesgad/mcp-server-semgrep.git"
+  },
+  "license": "MIT",
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.9"
   },
   "dependencies": {
     "axios": "^1.0.0"
@@ -36,12 +51,23 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "smithery": "https://smithery.ai/server/@Szowesgad/mcp-server-semgrep",
+    "mcp": "https://mcp.so/@Szowesgad/mcp-server-semgrep"
+  },
   "bin": {
-    "semgrep-mcp": "./build/index.js"
+    "mcp-server-semgrep": "./build/index.js"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
     ]
+  },
+  "packageManager": "pnpm@8.0.0",
+  "funding": {
+    "type": "individual",
+    "url": "https://div0.space"
   }
 }

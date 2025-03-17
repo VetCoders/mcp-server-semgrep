@@ -1,0 +1,44 @@
+# Source code (since we're publishing built code)
+src/
+
+# Tests
+tests/
+vitest.config.ts
+*.test.ts
+
+# Development files
+.github/
+.vscode/
+.idea/
+.editorconfig
+.eslintrc.json
+.prettierrc
+.cursorrules
+.cursor/
+
+# Examples (can be fetched from the repo)
+examples/
+
+# Misc
+node_modules/
+coverage/
+.DS_Store
+*.log
+.env
+.env.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+tsconfig.tsbuildinfo
+
+# Keep only necessary documentation
+CONTRIBUTING.md
+test-rule.yaml
+test-token.js
+
+# Include compiled code and README
+!build/
+!README.md
+!USAGE.md
+!LICENSE

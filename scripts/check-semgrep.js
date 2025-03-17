@@ -41,6 +41,15 @@ const COMMON_PATHS = [
   join(process.env.APPDATA || '', 'Python', 'Scripts', 'semgrep.exe'),
   // Windows NPM global installation
   join(process.env.APPDATA || '', 'npm', 'semgrep.cmd'),
+  // Additional paths for NPM global installs
+  join(process.env.npm_config_prefix || '', 'lib', 'node_modules', 'semgrep', 'bin', 'semgrep'),
+  // Additional paths for PNPM global installs
+  join(process.env.PNPM_HOME || '', 'semgrep/bin/semgrep'),
+  // NVM paths
+  join(process.env.NVM_DIR || '', 'versions/node/*/bin/semgrep'),
+  // Local node_modules (when installed as a dependency)
+  join(process.cwd(), 'node_modules', 'semgrep', 'bin', 'semgrep'),
+  join(process.cwd(), 'node_modules', '.bin', 'semgrep'),
 ];
 
 async function findSemgrep() {
@@ -103,11 +112,30 @@ async function main() {
     console.warn('MCP Server Semgrep requires semgrep to be installed to function properly.');
     console.warn('\nInstallation options:');
     console.warn('  • NPM: npm install -g semgrep');
+    console.warn('  • PNPM: pnpm add -g semgrep');
+    console.warn('  • Yarn: yarn global add semgrep');
     console.warn('  • Python: pip install semgrep');
     console.warn('  • macOS: brew install semgrep');
     console.warn('  • Linux: sudo apt-get install semgrep');
+    console.warn('  • Windows: pip install semgrep');
     console.warn('  • Manual: See https://semgrep.dev/docs/getting-started/');
     console.warn('\nAfter installing, verify with: semgrep --version');
+    
+    // Try to determine package manager from environment and suggest the right command
+    const usingNpm = process.env.npm_execpath && process.env.npm_execpath.includes('npm');
+    const usingPnpm = process.env.npm_execpath && process.env.npm_execpath.includes('pnpm');
+    const usingYarn = process.env.npm_execpath && process.env.npm_execpath.includes('yarn');
+    
+    if (usingPnpm) {
+      console.warn('\nDetected pnpm! You can install semgrep with:');
+      console.warn('  pnpm add -g semgrep');
+    } else if (usingYarn) {
+      console.warn('\nDetected yarn! You can install semgrep with:');
+      console.warn('  yarn global add semgrep');
+    } else if (usingNpm) {
+      console.warn('\nDetected npm! You can install semgrep with:');
+      console.warn('  npm install -g semgrep');
+    }
     
     // Exit with non-zero code to indicate a warning but not fail the installation
     process.exit(0);

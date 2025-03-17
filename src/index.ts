@@ -25,8 +25,8 @@ class SemgrepServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'semgrep-server',
-        version: '0.1.0',
+        name: 'mcp-server-semgrep',
+        version: '1.0.0',
       },
       {
         capabilities: {
@@ -765,7 +765,7 @@ rules:
 
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('Semgrep MCP Server running on stdio');
+    console.error('MCP Server Semgrep running on stdio');
   }
 }
 

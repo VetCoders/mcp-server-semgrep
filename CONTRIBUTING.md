@@ -1,4 +1,4 @@
-# Contributing to Semgrep MCP Server
+# Contributing to MCP Server Semgrep
 
 Thank you for considering contributing to mcp-server-semgrep! This guide will help you get started.
 
