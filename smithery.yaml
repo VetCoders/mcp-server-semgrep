@@ -1,0 +1,11 @@
+name: mcp-server-semgrep
+description: MCP Server for Semgrep static code analysis with security vulnerability detection
+
+# Konfiguracja budowania
+build:
+  dockerfile: Dockerfile
+
+# Definiowanie, które zmienne są sekretami - Smithery będzie prosić o ich wartości podczas deploymentu
+secrets:
+  - name: SEMGREP_APP_TOKEN
+    description: API token for Semgrep App integration (optional but recommended for Pro features)
