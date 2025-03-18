@@ -2,23 +2,10 @@
 name: mcp-server-semgrep
 description: MCP Server for Semgrep static code analysis with security vulnerability detection
 
-startCommand:
-  type: stdio
-  configSchema:
-    type: object
-    properties:
-      semgrepToken:
-        type: string
-        description: "API token for Semgrep Pro features (optional)"
-    additionalProperties: false
-  commandFunction: |-
-    (config) => ({
-      "command": "node",
-      "args": [
-        "build/index.js"
-      ],
-      "env": {
-        "NODE_ENV": "production",
-        "SEMGREP_APP_TOKEN": config.semgrepToken || ""
-      }
-    })
+build:
+  dockerfile: Dockerfile
+
+# Definiowanie, które zmienne są sekretami - Smithery będzie prosić o ich wartości podczas deploymentu
+secrets:
+  - name: SEMGREP_APP_TOKEN
+    description: API token for Semgrep App integration (optional but recommended for Pro features)
