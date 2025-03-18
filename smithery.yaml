@@ -1,4 +1,7 @@
 # Smithery.ai configuration
+name: mcp-server-semgrep
+description: MCP Server for Semgrep static code analysis with security vulnerability detection
+
 startCommand:
   type: stdio
   configSchema:
