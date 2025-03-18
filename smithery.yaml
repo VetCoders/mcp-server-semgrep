@@ -1,15 +1,11 @@
 name: mcp-server-semgrep
-description: MCP Server for Semgrep static code analysis with security vulnerability detection
+description: MCP Server for Semgrep static code analysis
 
-# Build configuration
 build:
   dockerfile: Dockerfile
 
-# Environment variables
 env:
-  - name: NODE_ENV
-    value: "production"
+  NODE_ENV: production
 
-# Define secrets
 secrets:
   - SEMGREP_APP_TOKEN
