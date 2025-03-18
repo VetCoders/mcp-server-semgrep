@@ -49,7 +49,7 @@ MCP Server Semgrep is a [Model Context Protocol](https://modelcontextprotocol.io
 
 ## Functions
 
-MCP Server Semgrep provides the following tools:
+Semgrep MCP Server provides the following tools:
 
 - **scan_directory**: Scanning source code for potential issues
 - **list_rules**: Displaying available rules and languages supported by Semgrep
@@ -76,7 +76,17 @@ MCP Server Semgrep provides the following tools:
 - Node.js v18+
 - TypeScript (for development)
 
-### Option 1: Install from NPM Registry (Recommended)
+### Option 1: Install from Smithery.ai (Recommended)
+
+The easiest way to install and use MCP Server Semgrep is through Smithery.ai:
+
+1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+2. Follow the installation instructions to add it to your MCP-compatible clients
+3. Configure any optional settings like the Semgrep API token
+
+This is the recommended method for Claude Desktop and other MCP clients as it handles all dependencies and configuration automatically.
+
+### Option 2: Install from NPM Registry
 
 ```bash
 # Using npm
@@ -90,10 +100,9 @@ yarn global add mcp-server-semgrep
 ```
 
 The package is also available on other registries:
-- [Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
 - [MCP.so](https://mcp.so/@Szowesgad/mcp-server-semgrep)
 
-### Option 2: Install from GitHub
+### Option 3: Install from GitHub
 
 ```bash
 # Using npm
@@ -106,7 +115,7 @@ pnpm add -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
 yarn global add git+https://github.com/Szowesgad/mcp-server-semgrep.git
 ```
 
-### Option 3: Local Development Setup
+### Option 4: Local Development Setup
 
 1. Clone the repository:
 ```bash
@@ -180,10 +189,18 @@ Semgrep can be installed in several ways:
 
 ## Integration with Claude Desktop
 
-To integrate MCP Server Semgrep with Claude Desktop:
+There are two ways to integrate MCP Server Semgrep with Claude Desktop:
+
+### Method 1: Install via Smithery.ai (Recommended)
+
+1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+2. Click "Install in Claude Desktop"
+3. Follow the on-screen instructions
+
+### Method 2: Manual Configuration
 
 1. Install Claude Desktop
-2. Update the Claude Desktop configuration file (`claude_desktop_config.json`) and put this, somewhere around your numerous other servers. Add the SEMGREP_APP_TOKEN (recommended) :
+2. Update the Claude Desktop configuration file (`claude_desktop_config.json`) and add this to your servers section:
 
 ```json
 {
@@ -194,7 +211,7 @@ To integrate MCP Server Semgrep with Claude Desktop:
         "/your_path/mcp-server-semgrep/build/index.js"
       ],
         "env": {
-          "SEMGREP_APP_TOKEN": "your_sepgrep_app_token"
+          "SEMGREP_APP_TOKEN": "your_semgrep_app_token"
       }
     }
   }
