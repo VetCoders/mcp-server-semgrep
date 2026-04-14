@@ -14,6 +14,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // Determine the MCP directory
 const __filename = fileURLToPath(import.meta.url);
@@ -319,7 +320,6 @@ class SemgrepServer {
     try {
       // Check for SEMGREP_APP_TOKEN in environment
       // Use execFile with arg array to prevent shell injection (CWE-78 fix)
-      const execFileAsync = promisify(execFile);
       const semgrepArgs = ['scan', '--json', '--config', configParam, scanPath];
       
       // Add token if available - note that Semgrep CLI might use different formats 
@@ -328,7 +328,8 @@ class SemgrepServer {
         semgrepArgs.splice(1, 0, '--oauth-token', process.env.SEMGREP_APP_TOKEN);
       }
 
-      console.error('Executing: semgrep scan [args redacted for security]');
+      const loggedArgs = semgrepArgs.map(arg => arg === process.env.SEMGREP_APP_TOKEN ? '[REDACTED]' : arg);
+      console.error(`Executing: semgrep ${loggedArgs.join(' ')}`);
       const { stdout, stderr } = await execFileAsync('semgrep', semgrepArgs);
 
       return {
@@ -464,14 +465,15 @@ semgrep scan --config=p/ci`;
     const id = args.id || 'custom_rule';
 
     // Create YAML rule
-    const ruleYaml = `
-rules:
-  - id: ${id}
-    pattern: ${args.pattern}
-    message: ${args.message}
-    languages: [${args.language}]
-    severity: ${severity}
-`;
+    // Use JSON.stringify to escape user values, preventing YAML injection
+    const ruleYaml = [
+      'rules:',
+      '  - id: ' + JSON.stringify(id),
+      '    pattern: ' + JSON.stringify(args.pattern),
+      '    message: ' + JSON.stringify(args.message),
+      '    languages: [' + JSON.stringify(args.language) + ']',
+      '    severity: ' + JSON.stringify(severity),
+    ].join('\n') + '\n';
 
     try {
       await fs.writeFile(outputPath, ruleYaml, 'utf-8');
