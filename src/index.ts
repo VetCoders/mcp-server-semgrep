@@ -7,12 +7,13 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // Determine the MCP directory
 const __filename = fileURLToPath(import.meta.url);
@@ -46,7 +47,7 @@ class SemgrepServer {
 
   private async checkSemgrepInstallation(): Promise<boolean> {
     try {
-      await execAsync('semgrep --version');
+      await execFileAsync('semgrep', ['--version']);
       return true;
     } catch (error) {
       return false;
@@ -56,15 +57,13 @@ class SemgrepServer {
   private async installSemgrep(): Promise<void> {
     console.error('Installing Semgrep...');
     try {
-      // Check if pip is installed
-      await execAsync('pip3 --version');
+      await execFileAsync('pip3', ['--version']);
     } catch (error) {
       throw new Error('Python/pip3 is not installed. Please install Python and pip3.');
     }
 
     try {
-      // Install Semgrep via pip
-      await execAsync('pip3 install semgrep');
+      await execFileAsync('pip3', ['install', 'semgrep']);
       console.error('Semgrep was successfully installed');
     } catch (error: any) {
       throw new Error(`Error installing Semgrep: ${error.message}`);
@@ -311,30 +310,17 @@ class SemgrepServer {
 
     const scanPath = this.validateAbsolutePath(args.path, 'path');
     const config = args.config || 'auto';
-    
-    // Use validateAbsolutePath which now handles special config values
     const configParam = this.validateAbsolutePath(config, 'config');
 
     try {
-      // Check for SEMGREP_APP_TOKEN in environment
-      let cmd = `semgrep scan --json --config ${configParam} ${scanPath}`;
-      
-      // Add token if available - note that Semgrep CLI might use different formats 
-      // for different versions, so we'll try both environment variable and flag approaches
-      if (process.env.SEMGREP_APP_TOKEN) {
-        // First approach: Set environment for child process
-        const env = { ...process.env };
-        
-        // Second approach: Try adding the flag  
-        // Some Semgrep versions accept --oauth-token instead of --auth-token
-        if (config.startsWith('r/')) {
-          // For Pro rules, we definitely need the token
-          cmd = `semgrep scan --json --oauth-token ${process.env.SEMGREP_APP_TOKEN} --config ${configParam} ${scanPath}`;
-        }
+      const cmdArgs: string[] = ['scan', '--json', '--config', configParam, scanPath];
+
+      if (process.env.SEMGREP_APP_TOKEN && config.startsWith('r/')) {
+        cmdArgs.splice(2, 0, '--oauth-token', process.env.SEMGREP_APP_TOKEN);
       }
-      
-      console.error(`Executing: ${cmd.replace(process.env.SEMGREP_APP_TOKEN || '', '[REDACTED]')}`);
-      const { stdout, stderr } = await execAsync(cmd);
+
+      console.error(`Executing: semgrep ${cmdArgs.join(' ')}`);
+      const { stdout } = await execFileAsync('semgrep', cmdArgs);
 
       return {
         content: [
@@ -417,9 +403,9 @@ semgrep scan --config=p/ci`;
     const resultsFile = this.validateAbsolutePath(args.results_file, 'results_file');
 
     try {
-      const { stdout } = await execAsync(`cat ${resultsFile}`);
-      const results = JSON.parse(stdout);
-      
+      const fileContent = await readFile(resultsFile, 'utf-8');
+      const results = JSON.parse(fileContent);
+
       // Simple analysis of the results
       const summary = {
         total_findings: results.results?.length || 0,
@@ -479,7 +465,7 @@ rules:
 `;
 
     try {
-      await execAsync(`echo '${ruleYaml}' > ${outputPath}`);
+      await writeFile(outputPath, ruleYaml, 'utf-8');
       return {
         content: [
           {
@@ -509,9 +495,9 @@ rules:
     const resultsFile = this.validateAbsolutePath(args.results_file, 'results_file');
 
     try {
-      const { stdout } = await execAsync(`cat ${resultsFile}`);
-      const results = JSON.parse(stdout);
-      
+      const fileContent = await readFile(resultsFile, 'utf-8');
+      const results = JSON.parse(fileContent);
+
       let filteredResults = results.results || [];
 
       // Filter by severity
@@ -585,8 +571,8 @@ rules:
     const format = args.format || 'text';
 
     try {
-      const { stdout } = await execAsync(`cat ${resultsFile}`);
-      const results = JSON.parse(stdout);
+      const fileContent = await readFile(resultsFile, 'utf-8');
+      const results = JSON.parse(fileContent);
 
       let output = '';
       switch (format) {
@@ -650,7 +636,7 @@ rules:
           break;
       }
 
-      await execAsync(`echo '${output}' > ${outputFile}`);
+      await writeFile(outputFile, output, 'utf-8');
       return {
         content: [
           {
@@ -684,9 +670,9 @@ rules:
     const newResultsFile = this.validateAbsolutePath(args.new_results, 'new_results');
 
     try {
-      const { stdout: oldContent } = await execAsync(`cat ${oldResultsFile}`);
-      const { stdout: newContent } = await execAsync(`cat ${newResultsFile}`);
-      
+      const oldContent = await readFile(oldResultsFile, 'utf-8');
+      const newContent = await readFile(newResultsFile, 'utf-8');
+
       const oldResults = JSON.parse(oldContent).results || [];
       const newResults = JSON.parse(newContent).results || [];
 
