@@ -320,6 +320,7 @@ class SemgrepServer {
     const configParam = validateAbsolutePath(config, 'config');
 
     try {
+      // Use execFile with arg array to prevent shell injection (CWE-78 fix)
       const semgrepArgs = ['scan', '--json', '--config', configParam, scanPath];
 
       if (process.env.SEMGREP_APP_TOKEN && config.startsWith('r/')) {
@@ -435,6 +436,7 @@ semgrep scan --config=p/ci`;
     const language = validateRuleField(args.language, 'language', ALLOWED_LANGUAGE);
     const severity = validateRuleSeverity(args.severity ?? 'WARNING');
 
+    // escapeYamlScalar uses JSON.stringify to escape user values, preventing YAML injection
     const ruleYaml = [
       'rules:',
       `  - id: ${id}`,
