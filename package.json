@@ -52,14 +52,16 @@
     "url": "https://github.com/VetCoders/mcp-server-semgrep.git"
   },
   "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.6.0",
     "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^8.57.1",
     "typescript": "^5.0.0",
-    "vitest": "^3.0.9"
+    "vitest": "^3.2.4"
   },
   "optionalDependencies": {
     "semgrep": "^1.110.0"
