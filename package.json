@@ -6,14 +6,30 @@
   "type": "module",
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
+    "clean": "rm -rf build",
+    "rebuild": "npm run clean && npm run build",
     "start": "node build/index.js",
     "dev": "ts-node --esm src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint --ext .ts src tests",
     "postinstall": "node scripts/check-semgrep.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run rebuild && npm test"
   },
+  "files": [
+    "build/",
+    "scripts/",
+    "Dockerfile",
+    "smithery.yaml",
+    "logo.svg",
+    "README.md",
+    "README_PL.md",
+    "USAGE.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
   "keywords": [
     "mcp",
     "model-context-protocol",
