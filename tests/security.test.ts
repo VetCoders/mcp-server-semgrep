@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import path from 'path';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'fs';
 import { writeFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
 import {
+  ALLOWED_ROOTS_ENV,
   BASE_ALLOWED_PATH,
+  getAllowedRoots,
+  parseSemgrepResults,
   validateAbsolutePath,
   validateNoShellMetacharacters,
   validateRuleField,
@@ -10,16 +15,30 @@ import {
 } from '../src/index.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
+function withAllowedRootsEnv<T>(allowedRoots: string[], callback: () => T): T {
+  const previousValue = process.env[ALLOWED_ROOTS_ENV];
+  process.env[ALLOWED_ROOTS_ENV] = allowedRoots.join(path.delimiter);
+
+  try {
+    return callback();
+  } finally {
+    if (previousValue === undefined) {
+      delete process.env[ALLOWED_ROOTS_ENV];
+    } else {
+      process.env[ALLOWED_ROOTS_ENV] = previousValue;
+    }
+  }
+}
+
 describe('validateNoShellMetacharacters', () => {
-  it('accepts plain ASCII paths', () => {
+  it('accepts Windows-compatible separators and normal filesystem punctuation', () => {
+    expect(() => validateNoShellMetacharacters(String.raw`C:\safe\path\with #hash !bang ~tilde.json`, 'p')).not.toThrow();
     expect(() => validateNoShellMetacharacters('/safe/path/file.json', 'p')).not.toThrow();
   });
 
   it.each([
-    ['; id'], ['| id'], ['& id'], ['`id`'], ['$(id)'], ['<x>'], ['{x}'],
-    ['a\nb'], ['a\rb'], ['a\\b'], ['a!b'], ['a#b'], ['a*b'], ['a?b'], ['a[b]'],
-    ['a"b'], ["a'b"], ['a~b'], ['a\tb'],
-  ])('rejects shell metacharacter in %s', (payload) => {
+    ['a\nb'], ['a\rb'], ['a\tb'], ['a\u0000b'],
+  ])('rejects control characters in %s', (payload) => {
     expect(() => validateNoShellMetacharacters(payload, 'p')).toThrow(McpError);
   });
 });
@@ -38,24 +57,46 @@ describe('validateAbsolutePath', () => {
     expect(() => validateAbsolutePath('/etc/passwd', 'p')).toThrow(McpError);
   });
 
+  it('accepts punctuation that is valid in filesystem paths', () => {
+    const safe = path.join(BASE_ALLOWED_PATH, 'sub', 'safe;name#test!.json');
+    expect(validateAbsolutePath(safe, 'p')).toBe(path.normalize(safe));
+  });
+
   it('rejects path traversal escaping the base', () => {
     const evil = path.join(BASE_ALLOWED_PATH, '..', '..', 'etc', 'passwd');
     expect(() => validateAbsolutePath(evil, 'p')).toThrow(McpError);
   });
 
-  it('CWE-78 regression: rejects shell metacharacters even after prefix check passes', () => {
-    const payload = path.join(BASE_ALLOWED_PATH, 'poc-results.json') + '; id >&2; false; #';
-    expect(() => validateAbsolutePath(payload, 'results_file')).toThrow(McpError);
+  it('uses configured workspace roots instead of the package directory', () => {
+    const workspaceRoot = mkdtempSync(path.join(tmpdir(), 'semgrep-root-'));
+    mkdirSync(path.join(workspaceRoot, 'src'), { recursive: true });
+
+    try {
+      withAllowedRootsEnv([workspaceRoot], () => {
+        expect(getAllowedRoots()).toEqual([realpathSync.native(workspaceRoot)]);
+        expect(validateAbsolutePath(path.join(workspaceRoot, 'src', 'app.ts'), 'path'))
+          .toBe(path.join(realpathSync.native(workspaceRoot), 'src', 'app.ts'));
+      });
+    } finally {
+      rmSync(workspaceRoot, { recursive: true, force: true });
+    }
   });
 
-  it('CWE-78 regression: rejects backtick command substitution', () => {
-    const payload = path.join(BASE_ALLOWED_PATH, '`whoami`.json');
-    expect(() => validateAbsolutePath(payload, 'results_file')).toThrow(McpError);
-  });
+  it('rejects sibling prefix paths outside a configured workspace root', () => {
+    const workspaceRoot = mkdtempSync(path.join(tmpdir(), 'semgrep-root-'));
+    const siblingRoot = `${workspaceRoot}-shadow`;
+    mkdirSync(path.join(workspaceRoot, 'src'), { recursive: true });
+    mkdirSync(path.join(siblingRoot, 'src'), { recursive: true });
 
-  it('CWE-78 regression: rejects pipe-based injection', () => {
-    const payload = path.join(BASE_ALLOWED_PATH, 'a.json') + ' | nc attacker 4444';
-    expect(() => validateAbsolutePath(payload, 'results_file')).toThrow(McpError);
+    try {
+      withAllowedRootsEnv([workspaceRoot], () => {
+        expect(() => validateAbsolutePath(path.join(siblingRoot, 'src', 'app.ts'), 'path'))
+          .toThrow(McpError);
+      });
+    } finally {
+      rmSync(workspaceRoot, { recursive: true, force: true });
+      rmSync(siblingRoot, { recursive: true, force: true });
+    }
   });
 
   it('config: accepts auto', () => {
@@ -68,7 +109,11 @@ describe('validateAbsolutePath', () => {
   });
 
   it('config: rejects shell metacharacters in registry-like values', () => {
-    expect(() => validateAbsolutePath('p/security; id', 'config')).toThrow(McpError);
+    expect(() => validateAbsolutePath('p/security\nid', 'config')).toThrow(McpError);
+  });
+
+  it('config: rejects malformed registry references', () => {
+    expect(() => validateAbsolutePath('p/security with spaces', 'config')).toThrow(McpError);
   });
 });
 
@@ -121,5 +166,20 @@ describe('CWE-78 end-to-end regression (filesystem read instead of shell)', () =
     } finally {
       await unlink(fixture).catch(() => undefined);
     }
+  });
+});
+
+describe('parseSemgrepResults', () => {
+  it('returns an empty object for null payloads', () => {
+    expect(parseSemgrepResults('null')).toEqual({});
+  });
+
+  it('returns an empty object for non-object JSON payloads', () => {
+    expect(parseSemgrepResults('[]')).toEqual({});
+    expect(parseSemgrepResults('"text"')).toEqual({});
+  });
+
+  it('preserves object payloads', () => {
+    expect(parseSemgrepResults(JSON.stringify({ results: [] }))).toEqual({ results: [] });
   });
 });

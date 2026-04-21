@@ -32,9 +32,10 @@ GHSA we publish.
 - This server is intended for **local-first** use over `stdio`. Do not expose
   the MCP transport to untrusted networks without an authenticated proxy in
   front.
-- All path arguments are restricted to `BASE_ALLOWED_PATH` (the directory two
-  levels above the compiled server entrypoint). If you mount the server inside
-  a sandbox, prefer the smallest writable surface possible.
+- All path arguments are restricted to the configured workspace roots. By
+  default this is `process.cwd()`. For desktop launchers and remote-managed
+  installs, set `MCP_SERVER_SEMGREP_ALLOWED_ROOTS` to the smallest set of
+  absolute directories the assistant should touch.
 - `SEMGREP_APP_TOKEN`, when set, is forwarded to `semgrep` via `--oauth-token`
   using `child_process.execFile` (no shell) and is **redacted** in stderr
   logs. Treat the token as a secret and rotate it on suspected exposure.

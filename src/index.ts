@@ -8,6 +8,7 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import { execFile } from 'child_process';
+import { existsSync, realpathSync } from 'fs';
 import { promisify } from 'util';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
@@ -16,24 +17,103 @@ import { fileURLToPath } from 'url';
 const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-export const BASE_ALLOWED_PATH = path.resolve(__dirname, '../..');
+export const ALLOWED_ROOTS_ENV = 'MCP_SERVER_SEMGREP_ALLOWED_ROOTS';
+export const BASE_ALLOWED_PATH = path.resolve(process.cwd());
 
 const SEMGREP_MAX_BUFFER = 50 * 1024 * 1024;
 
-const SHELL_METACHARACTERS = /[;&|`$()<>{}\\!#\n\r\t*?[\]"'~]/;
+const CONTROL_CHARACTERS = /[\0\n\r\t]/;
+const REGISTRY_CONFIG_REF = /^(?:[pr]\/[A-Za-z0-9._/-]+|auto)$/;
 
 const ALLOWED_SEVERITY = new Set(['ERROR', 'WARNING', 'INFO']);
 const ALLOWED_LANGUAGE = /^[a-zA-Z][a-zA-Z0-9_+-]{0,31}$/;
 const ALLOWED_RULE_ID = /^[a-zA-Z][a-zA-Z0-9_.-]{0,127}$/;
 
+type SemgrepFinding = Record<string, any>;
+type SemgrepResults = {
+  results?: SemgrepFinding[];
+  [key: string]: unknown;
+};
+
 export function validateNoShellMetacharacters(value: string, paramName: string): void {
-  if (SHELL_METACHARACTERS.test(value)) {
+  if (CONTROL_CHARACTERS.test(value)) {
     throw new McpError(
       ErrorCode.InvalidParams,
-      `${paramName} contains characters that are not allowed`
+      `${paramName} contains control characters that are not allowed`
     );
   }
+}
+
+function resolvePathForValidation(candidatePath: string): string {
+  const absolutePath = path.resolve(candidatePath);
+  let existingPath = absolutePath;
+  const missingSegments: string[] = [];
+
+  while (!existsSync(existingPath)) {
+    const parentPath = path.dirname(existingPath);
+    if (parentPath === existingPath) {
+      break;
+    }
+
+    missingSegments.unshift(path.basename(existingPath));
+    existingPath = parentPath;
+  }
+
+  const resolvedExistingPath = realpathSync.native(existingPath);
+  return path.resolve(resolvedExistingPath, ...missingSegments);
+}
+
+function isPathWithinRoot(rootPath: string, candidatePath: string): boolean {
+  const relativePath = path.relative(rootPath, candidatePath);
+  return relativePath === '' || (
+    !relativePath.startsWith('..') &&
+    !path.isAbsolute(relativePath)
+  );
+}
+
+function formatAllowedRoots(allowedRoots: string[]): string {
+  return allowedRoots.length === 1 ? allowedRoots[0] : allowedRoots.join(', ');
+}
+
+export function getAllowedRoots(): string[] {
+  const configuredRoots = process.env[ALLOWED_ROOTS_ENV]
+    ?.split(path.delimiter)
+    .map((rootPath) => rootPath.trim())
+    .filter(Boolean)
+    .map((rootPath) => resolvePathForValidation(rootPath));
+
+  const allowedRoots = configuredRoots?.length
+    ? configuredRoots
+    : [resolvePathForValidation(BASE_ALLOWED_PATH)];
+
+  return Array.from(new Set(allowedRoots));
+}
+
+export function parseSemgrepResults(fileContent: string): SemgrepResults {
+  const parsedContent = JSON.parse(fileContent);
+
+  if (!parsedContent || typeof parsedContent !== 'object' || Array.isArray(parsedContent)) {
+    return {};
+  }
+
+  return parsedContent as SemgrepResults;
+}
+
+function getSemgrepFindings(results: SemgrepResults): SemgrepFinding[] {
+  return Array.isArray(results.results) ? results.results : [];
+}
+
+function validateRegistryConfig(configValue: string): string {
+  validateNoShellMetacharacters(configValue, 'config');
+
+  if (!REGISTRY_CONFIG_REF.test(configValue)) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      'config must be "auto" or a Semgrep registry reference like "p/security"'
+    );
+  }
+
+  return configValue;
 }
 
 export function validateAbsolutePath(pathToValidate: string, paramName: string): string {
@@ -42,9 +122,10 @@ export function validateAbsolutePath(pathToValidate: string, paramName: string):
     pathToValidate.startsWith('r/') ||
     pathToValidate === 'auto'
   )) {
-    validateNoShellMetacharacters(pathToValidate, paramName);
-    return pathToValidate;
+    return validateRegistryConfig(pathToValidate);
   }
+
+  validateNoShellMetacharacters(pathToValidate, paramName);
 
   if (!path.isAbsolute(pathToValidate)) {
     throw new McpError(
@@ -53,7 +134,7 @@ export function validateAbsolutePath(pathToValidate: string, paramName: string):
     );
   }
 
-  const normalizedPath = path.normalize(pathToValidate);
+  const normalizedPath = resolvePathForValidation(pathToValidate);
 
   if (!path.isAbsolute(normalizedPath)) {
     throw new McpError(
@@ -62,14 +143,18 @@ export function validateAbsolutePath(pathToValidate: string, paramName: string):
     );
   }
 
-  if (!normalizedPath.startsWith(BASE_ALLOWED_PATH)) {
+  const allowedRoots = getAllowedRoots();
+  const isWithinAllowedRoots = allowedRoots.some((allowedRoot) =>
+    isPathWithinRoot(allowedRoot, normalizedPath)
+  );
+
+  if (!isWithinAllowedRoots) {
     throw new McpError(
       ErrorCode.InvalidParams,
-      `${paramName} must be within the MCP directory (${BASE_ALLOWED_PATH})`
+      `${paramName} must be within an allowed workspace root (${formatAllowedRoots(allowedRoots)})`
     );
   }
 
-  validateNoShellMetacharacters(normalizedPath, paramName);
   return normalizedPath;
 }
 
@@ -134,7 +219,7 @@ class SemgrepServer {
     try {
       await execFileAsync('semgrep', ['--version']);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -143,7 +228,7 @@ class SemgrepServer {
     console.error('Installing Semgrep...');
     try {
       await execFileAsync('pip3', ['--version']);
-    } catch (error) {
+    } catch {
       throw new Error('Python/pip3 is not installed. Please install Python and pip3.');
     }
 
@@ -173,7 +258,7 @@ class SemgrepServer {
             properties: {
               path: {
                 type: 'string',
-                description: 'Absolute path to the directory to scan (must be within MCP directory)'
+                description: 'Absolute path to the directory to scan (must be within an allowed workspace root)'
               },
               config: {
                 type: 'string',
@@ -205,7 +290,7 @@ class SemgrepServer {
             properties: {
               results_file: {
                 type: 'string',
-                description: 'Absolute path to JSON results file (must be within MCP directory)'
+                description: 'Absolute path to JSON results file (must be within an allowed workspace root)'
               }
             },
             required: ['results_file']
@@ -397,15 +482,16 @@ semgrep scan --config=p/ci`;
 
     try {
       const fileContent = await readFile(resultsFile, 'utf-8');
-      const results = JSON.parse(fileContent);
+      const results = parseSemgrepResults(fileContent);
+      const findings = getSemgrepFindings(results);
 
       const summary = {
-        total_findings: results.results?.length || 0,
+        total_findings: findings.length,
         by_severity: {} as Record<string, number>,
         by_rule: {} as Record<string, number>
       };
 
-      for (const finding of results.results || []) {
+      for (const finding of findings) {
         const severity = finding.extra?.severity || 'unknown';
         const rule = finding.check_id || 'unknown';
         summary.by_severity[severity] = (summary.by_severity[severity] || 0) + 1;
@@ -469,9 +555,9 @@ semgrep scan --config=p/ci`;
 
     try {
       const fileContent = await readFile(resultsFile, 'utf-8');
-      const results = JSON.parse(fileContent);
+      const results = parseSemgrepResults(fileContent);
 
-      let filteredResults = results.results || [];
+      let filteredResults = getSemgrepFindings(results);
 
       if (args.severity) {
         filteredResults = filteredResults.filter(
@@ -530,8 +616,8 @@ semgrep scan --config=p/ci`;
 
     try {
       const fileContent = await readFile(resultsFile, 'utf-8');
-      const results = JSON.parse(fileContent);
-      const findings = results.results || [];
+      const results = parseSemgrepResults(fileContent);
+      const findings = getSemgrepFindings(results);
 
       let output = '';
       switch (format) {
@@ -617,8 +703,8 @@ semgrep scan --config=p/ci`;
         readFile(newResultsFile, 'utf-8'),
       ]);
 
-      const oldResults = JSON.parse(oldContent).results || [];
-      const newResults = JSON.parse(newContent).results || [];
+      const oldResults = getSemgrepFindings(parseSemgrepResults(oldContent));
+      const newResults = getSemgrepFindings(parseSemgrepResults(newContent));
 
       const oldFindings = new Set(oldResults.map((r: any) =>
         `${r.check_id}:${r.path}:${r.start?.line}:${r.start?.col}`
@@ -684,7 +770,7 @@ semgrep scan --config=p/ci`;
 
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('MCP Server Semgrep running on stdio');
+    console.error(`MCP Server Semgrep running on stdio (allowed roots: ${formatAllowedRoots(getAllowedRoots())})`);
   }
 }
 
