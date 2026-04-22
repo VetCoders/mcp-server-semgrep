@@ -10,7 +10,7 @@ First, make sure you have Node.js (v18+) installed. The server offers multiple w
 
 The simplest way to install and use MCP Server Semgrep is directly through Smithery.ai:
 
-1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
 2. Click the "Install" button for your preferred MCP client
 3. Follow the on-screen instructions to complete the installation
 
@@ -33,7 +33,7 @@ yarn global add mcp-server-semgrep
 
 ```bash
 # Install directly from GitHub repository
-npm install -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
+npm install -g git+https://github.com/VetCoders/mcp-server-semgrep.git
 ```
 
 ### Semgrep Installation Options:
@@ -63,6 +63,14 @@ pip install semgrep
 ```
 
 The server will automatically detect your Semgrep installation regardless of how it was installed, and will provide helpful guidance if it's missing.
+
+## Workspace Roots
+
+The server only accepts absolute paths that live inside an allowed workspace root.
+
+- Default behavior: use `process.cwd()` as the only allowed root.
+- Recommended for desktop clients and managed launchers: set `MCP_SERVER_SEMGREP_ALLOWED_ROOTS` to one or more absolute directories.
+- Multiple roots use your platform delimiter: `:` on macOS/Linux, `;` on Windows.
 
 ## Running the Server
 
@@ -118,7 +126,7 @@ The integration enhances developer experience through:
 In Claude Desktop, you might ask:
 
 ```
-Could you scan my project directory at /path/to/code for security vulnerabilities?
+Could you scan my project directory at /path/to/code for security vulnerabilities? That directory is already covered by MCP_SERVER_SEMGREP_ALLOWED_ROOTS.
 ```
 
 Behind the scenes, the MCP server handles requests like:
@@ -369,7 +377,7 @@ There are two ways to integrate with Claude Desktop:
 
 ### Method 1: Install via Smithery.ai (Recommended)
 
-1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
 2. Click "Install in Claude Desktop"
 3. Follow the on-screen instructions to complete the setup
 4. Launch Claude Desktop and the server will be available automatically

@@ -17,10 +17,18 @@ jobs:
     runs-on: self-hosted
     permissions:
       contents: read
-    env:
-      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-    container:
-      image: semgrep/semgrep
     steps:
     - uses: actions/checkout@v4
-    - run: semgrep ci
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    - name: Install Semgrep
+      run: python3 -m pip install --upgrade pip semgrep
+    - name: Run Semgrep CI
+      if: ${{ secrets.SEMGREP_APP_TOKEN != '' }}
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      run: semgrep ci
+    - name: Run Semgrep OSS fallback
+      if: ${{ secrets.SEMGREP_APP_TOKEN == '' }}
+      run: semgrep --config p/ci --error .
