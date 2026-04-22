@@ -25,13 +25,31 @@ eval(userInput); // Dangerous eval
 // Path to the MCP server executable
 const serverPath = path.join(__dirname, 'build', 'index.js');
 
-// Spawn the server process with Semgrep token
+// edited the "real-like" looking auth token to reduce confusion;
+// use a live SEMGREP_APP_TOKEN from the environment for Pro checks.
+const semgrepToken = process.env.SEMGREP_APP_TOKEN?.trim();
+const expectsProFeatures = Boolean(semgrepToken);
+const serverEnv = {
+  ...process.env,
+};
+
+if (expectsProFeatures) {
+  serverEnv.SEMGREP_APP_TOKEN = semgrepToken;
+} else {
+  console.log('No SEMGREP_APP_TOKEN provided; running the helper in standard-rules mode.');
+}
+
+// Spawn the server process with an optional Semgrep token
 const server = spawn('node', [serverPath], {
-  env: {
-    ...process.env,
-    SEMGREP_APP_TOKEN: '778e6a44531475d91dfa1b38d07f7e233ebad1d876cffc37a5b72b9460a25848'
-  },
+  env: serverEnv,
   stdio: ['pipe', 'pipe', 'pipe']
+});
+
+let serverExited = false;
+
+server.on('exit', (code, signal) => {
+  serverExited = true;
+  console.log(`\nServer exited early (code: ${code ?? 'null'}, signal: ${signal ?? 'none'}).`);
 });
 
 // Log server output for debugging
@@ -41,6 +59,11 @@ server.stderr.on('data', (data) => {
 
 // Function to send a message to the server
 function sendMessage(message) {
+  if (serverExited) {
+    console.log('\nSkipping request because the server is no longer running.');
+    return;
+  }
+
   const serialized = JSON.stringify(message) + '\n';
   console.log(`\nSending: ${serialized}`);
   server.stdin.write(serialized);
@@ -81,7 +104,11 @@ server.stdout.on('data', (data) => {
           console.log(responseText.substring(0, 500) + '...');
           
           if (!hasPro) {
-            console.log('\n❌ NO PRO FEATURES DETECTED: Response does not contain Pro-specific content');
+            if (expectsProFeatures) {
+              console.log('\nPro check did not expose Pro-specific content with the current SEMGREP_APP_TOKEN.');
+            } else {
+              console.log('\nPro check skipped: set SEMGREP_APP_TOKEN to verify Pro-specific content.');
+            }
           }
         } else {
           console.log(JSON.stringify(parsed, null, 2));
@@ -113,7 +140,7 @@ setTimeout(() => {
 }, 1000);
 
 setTimeout(() => {
-  console.log('\nTesting list_rules (should include Pro rules)...');
+  console.log(`\nTesting list_rules (${expectsProFeatures ? 'expecting Pro rules' : 'standard rules only'})...`);
   sendMessage({
     jsonrpc: '2.0',
     id: 2,
@@ -126,7 +153,7 @@ setTimeout(() => {
 }, 3000);
 
 setTimeout(() => {
-  console.log('\nTesting scan_directory (should use Pro rules)...');
+  console.log(`\nTesting scan_directory (${expectsProFeatures ? 'with optional Pro token' : 'with standard rules'})...`);
   sendMessage({
     jsonrpc: '2.0',
     id: 3,
