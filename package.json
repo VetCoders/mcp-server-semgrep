@@ -1,19 +1,35 @@
 {
   "name": "mcp-server-semgrep",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP Server for Semgrep Integration - static code analysis with AI",
   "main": "build/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
+    "clean": "rm -rf build",
+    "rebuild": "npm run clean && npm run build",
     "start": "node build/index.js",
     "dev": "ts-node --esm src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint 'src/**/*.ts'",
+    "lint": "eslint src tests",
     "postinstall": "node scripts/check-semgrep.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run rebuild && npm run lint && npm test"
   },
+  "files": [
+    "build/",
+    "scripts/",
+    "Dockerfile",
+    "smithery.yaml",
+    "logo.svg",
+    "README.md",
+    "README_PL.md",
+    "USAGE.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -23,27 +39,29 @@
     "code-quality",
     "ai",
     "claude",
-    "anthropic"
+    "anthropic",
+    "vetcoders"
   ],
-  "author": "Maciej Gad <maciej.gad.github@gmail.com>",
-  "homepage": "https://github.com/Szowesgad/mcp-server-semgrep",
+  "author": "VetCoders <void@div0.space>",
+  "homepage": "https://github.com/VetCoders/mcp-server-semgrep",
   "bugs": {
-    "url": "https://github.com/Szowesgad/mcp-server-semgrep/issues"
+    "url": "https://github.com/VetCoders/mcp-server-semgrep/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Szowesgad/mcp-server-semgrep.git"
+    "url": "https://github.com/VetCoders/mcp-server-semgrep.git"
   },
   "license": "MIT",
-  "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.6.0",
-    "@types/node": "^20.0.0",
-    "eslint": "^8.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^3.0.9"
-  },
   "dependencies": {
-    "axios": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "eslint": "^8.57.1",
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "optionalDependencies": {
     "semgrep": "^1.110.0"
@@ -54,8 +72,8 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "smithery": "https://smithery.ai/server/@Szowesgad/mcp-server-semgrep",
-    "mcp": "https://mcp.so/@Szowesgad/mcp-server-semgrep"
+    "smithery": "https://smithery.ai/server/@VetCoders/mcp-server-semgrep",
+    "mcp": "https://mcp.so/@VetCoders/mcp-server-semgrep"
   },
   "bin": {
     "mcp-server-semgrep": "./build/index.js"

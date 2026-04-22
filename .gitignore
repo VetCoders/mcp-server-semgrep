@@ -11,3 +11,4 @@ CLAUDE.md
 test_scan/
 semgrep_rules/
 /semgrep-rules
+/.vibecrafted

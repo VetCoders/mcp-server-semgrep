@@ -78,7 +78,7 @@ MCP Server Semgrep zapewnia następujące narzędzia:
 
 1. Sklonuj repozytorium:
 ```bash
-git clone https://github.com/Szowesgad/mcp-server-semgrep.git
+git clone https://github.com/VetCoders/mcp-server-semgrep.git
 cd mcp-server-semgrep
 ```
 
@@ -88,6 +88,14 @@ pnpm install
 ```
 
 > **Uwaga**: Proces instalacji automatycznie sprawdzi dostępność Semgrep. Jeśli Semgrep nie zostanie znaleziony, otrzymasz instrukcje dotyczące jego instalacji.
+
+#### Kontrakt katalogów roboczych
+
+Serwer odczytuje i zapisuje pliki tylko wewnątrz jawnie dozwolonych katalogów roboczych.
+
+- Domyślnie dozwolonym katalogiem jest bieżący katalog procesu (`process.cwd()`).
+- Dla Claude Desktop, Smithery i innych launcherów, które nie uruchamiają serwera w katalogu projektu, ustaw `MCP_SERVER_SEMGREP_ALLOWED_ROOTS` na jedną lub więcej ścieżek absolutnych.
+- Dla wielu katalogów użyj separatora właściwego dla platformy: `:` na macOS/Linux, `;` na Windows.
 
 #### Opcje instalacji Semgrep
 
@@ -125,7 +133,7 @@ pnpm run build
 Aby zintegrować MCP Server Semgrep z Claude Desktop:
 
 1. Zainstaluj Claude Desktop
-2. Zaktualizuj plik konfiguracyjny Claude Desktop (`claude_desktop_config.json`) i dodaj poniższy wpis. Zalecane jest dodanie SEMGREP_APP_TOKEN:
+2. Zaktualizuj plik konfiguracyjny Claude Desktop (`claude_desktop_config.json`) i dodaj poniższy wpis. Zalecane jest dodanie `SEMGREP_APP_TOKEN` oraz `MCP_SERVER_SEMGREP_ALLOWED_ROOTS`:
 
 ```json
 {
@@ -135,22 +143,23 @@ Aby zintegrować MCP Server Semgrep z Claude Desktop:
       "args": [
         "/twoja_ścieżka/mcp-server-semgrep/build/index.js"
       ],
-        "env": {
-          "SEMGREP_APP_TOKEN": "twój_token_semgrep"
+      "env": {
+        "SEMGREP_APP_TOKEN": "twój_token_semgrep",
+        "MCP_SERVER_SEMGREP_ALLOWED_ROOTS": "/Users/you/projects"
       }
     }
   }
 }
 ```
 
-3. Uruchom Claude Desktop i zacznij zadawać pytania dotyczące analizy kodu!
+3. Uruchom Claude Desktop i zacznij zadawać pytania dotyczące analizy kodu.
 
 ## Przykłady użycia
 
 ### Skanowanie projektu
 
 ```
-Mógłbyś przeskanować mój kod źródłowy w katalogu /projekty/moja-aplikacja pod kątem potencjalnych problemów bezpieczeństwa?
+Mógłbyś przeskanować mój kod źródłowy w katalogu /projekty/moja-aplikacja pod kątem potencjalnych problemów bezpieczeństwa? Ten katalog jest już uwzględniony w MCP_SERVER_SEMGREP_ALLOWED_ROOTS.
 ```
 
 ### Analiza spójności stylu
@@ -215,7 +224,6 @@ pnpm test
 
 ```
 ├── src/
-│   ├── config.ts         # Konfiguracja serwera
 │   └── index.ts          # Główny punkt wejścia i wszystkie implementacje handlerów
 ├── scripts/
 │   └── check-semgrep.js  # Helper do wykrywania i instalacji Semgrep

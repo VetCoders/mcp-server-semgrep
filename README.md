@@ -1,11 +1,11 @@
 # MCP Server Semgrep
-[![smithery badge](https://smithery.ai/badge/@Szowesgad/mcp-server-semgrep)](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+[![smithery badge](https://smithery.ai/badge/@VetCoders/mcp-server-semgrep)](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
 ### POWERED BY:
 [![POWERED BY](https://semgrep.dev/docs/img/semgrep-icon-text-horizontal.svg)](https://semgrep.dev)
 
 
 ## About the Project
-[![MCP Server Semgrep Logo](./logo.svg)](https://github.com/Szowesgad/mcp-server-semgrep)
+[![MCP Server Semgrep Logo](./logo.svg)](https://github.com/VetCoders/mcp-server-semgrep)
 This project was initially inspired by robustness of [Semgrep tool](https://semgrep.dev), [The Replit Team](https://github.com/replit) and their [Agent V2](https://replit.com), as well as the implementation by [stefanskiasan/semgrep-mcp-server](https://github.com/stefanskiasan/semgrep-mcp-server), but has evolved with significant architectural changes for enhanced and easier installation and maintenance.
 
 MCP Server Semgrep is a [Model Context Protocol](https://modelcontextprotocol.io) compliant server that integrates the powerful Semgrep static analysis tool with AI assistants like Anthropic Claude. It enables advanced code analysis, security vulnerability detection, and code quality improvements directly through a conversational interface.
@@ -80,7 +80,7 @@ Semgrep MCP Server provides the following tools:
 
 The easiest way to install and use MCP Server Semgrep is through Smithery.ai:
 
-1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
 2. Follow the installation instructions to add it to your MCP-compatible clients
 3. Configure any optional settings like the Semgrep API token
 
@@ -100,26 +100,26 @@ yarn global add mcp-server-semgrep
 ```
 
 The package is also available on other registries:
-- [MCP.so](https://mcp.so/@Szowesgad/mcp-server-semgrep)
+- [MCP.so](https://mcp.so/@VetCoders/mcp-server-semgrep)
 
 ### Option 3: Install from GitHub
 
 ```bash
 # Using npm
-npm install -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
+npm install -g git+https://github.com/VetCoders/mcp-server-semgrep.git
 
 # Using pnpm
-pnpm add -g git+https://github.com/Szowesgad/mcp-server-semgrep.git
+pnpm add -g git+https://github.com/VetCoders/mcp-server-semgrep.git
 
 # Using yarn
-yarn global add git+https://github.com/Szowesgad/mcp-server-semgrep.git
+yarn global add git+https://github.com/VetCoders/mcp-server-semgrep.git
 ```
 
 ### Option 4: Local Development Setup
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Szowesgad/mcp-server-semgrep.git
+git clone https://github.com/VetCoders/mcp-server-semgrep.git
 cd mcp-server-semgrep
 ```
 
@@ -148,6 +148,14 @@ yarn build
 ```
 
 > **Note**: The installation process will automatically check for Semgrep availability. If Semgrep is not found, you'll receive instructions on how to install it.
+
+### Workspace Root Contract
+
+This server only reads and writes files inside explicitly allowed workspace roots.
+
+- By default, the allowed root is the process working directory (`process.cwd()`).
+- For Claude Desktop, Smithery, or any launcher that does not start the server inside your project root, set `MCP_SERVER_SEMGREP_ALLOWED_ROOTS` to one or more absolute directories.
+- Use your platform path delimiter for multiple roots: `:` on macOS/Linux, `;` on Windows.
 
 ### Semgrep Installation Options
 
@@ -193,7 +201,7 @@ There are two ways to integrate MCP Server Semgrep with Claude Desktop:
 
 ### Method 1: Install via Smithery.ai (Recommended)
 
-1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@Szowesgad/mcp-server-semgrep)
+1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
 2. Click "Install in Claude Desktop"
 3. Follow the on-screen instructions
 
@@ -210,22 +218,25 @@ There are two ways to integrate MCP Server Semgrep with Claude Desktop:
       "args": [
         "/your_path/mcp-server-semgrep/build/index.js"
       ],
-        "env": {
-          "SEMGREP_APP_TOKEN": "your_semgrep_app_token"
+      "env": {
+        "SEMGREP_APP_TOKEN": "your_semgrep_app_token",
+        "MCP_SERVER_SEMGREP_ALLOWED_ROOTS": "/Users/you/projects"
       }
     }
   }
 }
 ```
 
-3. Launch Claude Desktop and start asking questions about code analysis!
+3. Launch Claude Desktop and start asking questions about code analysis.
+
+If you want to scan more than one workspace, set `MCP_SERVER_SEMGREP_ALLOWED_ROOTS` to a platform-delimited list of absolute paths.
 
 ## Usage Examples
 
 ### Project Scanning
 
 ```
-Could you scan my source code in the /projects/my-application directory for potential security issues?
+Could you scan my source code in the /projects/my-application directory for potential security issues? That directory is already included in MCP_SERVER_SEMGREP_ALLOWED_ROOTS.
 ```
 
 ### Style Consistency Analysis
@@ -290,7 +301,6 @@ pnpm test
 
 ```
 ├── src/
-│   ├── config.ts         # Server configuration
 │   └── index.ts          # Main entry point and all handler implementations
 ├── scripts/
 │   └── check-semgrep.js  # Semgrep detection and installation helper
