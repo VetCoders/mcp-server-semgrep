@@ -1,22 +1,33 @@
-FROM node:18-slim
+FROM node:20-slim AS build
 
 WORKDIR /app
 
-# Instalacja zależności systemowych
-RUN apt-get update && apt-get install -y python3 python3-pip git
+COPY package.json package-lock.json ./
+RUN npm ci --omit=optional --ignore-scripts
 
-# Preinstalacja Semgrep z obejściem ograniczeń środowiska zarządzanego
-RUN pip3 install --break-system-packages semgrep
-
-# Kopiowanie plików projektu
-COPY . .
-
-# Instalacja zależności Node i budowanie projektu
-RUN npm install
+COPY tsconfig.json ./
+COPY src ./src
 RUN npm run build
 
-# Sprawdzenie instalacji Semgrep
-RUN semgrep --version
+FROM node:20-slim AS runtime
 
-# Uruchomienie serwera
+ARG SEMGREP_VERSION=1.161.0
+ENV NODE_ENV=production
+ENV MCP_SERVER_SEMGREP_ALLOWED_ROOTS=/workspace:/app
+
+WORKDIR /app
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates git python3 python3-pip \
+  && rm -rf /var/lib/apt/lists/* \
+  && pip3 install --no-cache-dir --break-system-packages "semgrep==${SEMGREP_VERSION}" \
+  && semgrep --version
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --omit=optional --ignore-scripts \
+  && npm cache clean --force
+
+COPY --from=build /app/build ./build
+RUN mkdir -p /workspace
+
 CMD ["node", "build/index.js"]
