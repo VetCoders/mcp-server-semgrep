@@ -24,11 +24,14 @@ jobs:
         python-version: '3.x'
     - name: Install Semgrep
       run: python3 -m pip install --upgrade pip semgrep
-    - name: Run Semgrep CI
-      if: ${{ secrets.SEMGREP_APP_TOKEN != '' }}
+    - name: Run Semgrep
       env:
         SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-      run: semgrep ci
-    - name: Run Semgrep OSS fallback
-      if: ${{ secrets.SEMGREP_APP_TOKEN == '' }}
-      run: semgrep --config p/ci --error .
+      run: |
+        if [ -n "${SEMGREP_APP_TOKEN:-}" ]; then
+          echo "Running semgrep ci with SEMGREP_APP_TOKEN from GitHub Actions secrets."
+          semgrep ci
+        else
+          echo "SEMGREP_APP_TOKEN is not available. Falling back to OSS ruleset."
+          semgrep --config p/ci --error .
+        fi

@@ -82,7 +82,7 @@ The easiest way to install and use MCP Server Semgrep is through Smithery.ai:
 
 1. Visit [MCP Server Semgrep on Smithery.ai](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
 2. Follow the installation instructions to add it to your MCP-compatible clients
-3. Configure any optional settings like the Semgrep API token
+3. Configure any optional settings like the Semgrep API token and allowed workspace roots
 
 This is the recommended method for Claude Desktop and other MCP clients as it handles all dependencies and configuration automatically.
 
@@ -157,6 +157,14 @@ This server only reads and writes files inside explicitly allowed workspace root
 - For Claude Desktop, Smithery, or any launcher that does not start the server inside your project root, set `MCP_SERVER_SEMGREP_ALLOWED_ROOTS` to one or more absolute directories.
 - Use your platform path delimiter for multiple roots: `:` on macOS/Linux, `;` on Windows.
 
+### Authentication Modes
+
+This server does not implement its own Semgrep account handling. It shells out to the installed `semgrep` CLI and relies on Semgrep's normal authentication behavior.
+
+- Local terminal and local development runs can often use an existing `semgrep login` session from the current OS account.
+- Managed launches such as Claude Desktop, Smithery, containers, or CI should prefer an explicit `SEMGREP_APP_TOKEN` for deterministic behavior.
+- `SEMGREP_APP_TOKEN` is still the safest option when you need portable configuration across machines or runners.
+
 ### Semgrep Installation Options
 
 Semgrep can be installed in several ways:
@@ -208,7 +216,9 @@ There are two ways to integrate MCP Server Semgrep with Claude Desktop:
 ### Method 2: Manual Configuration
 
 1. Install Claude Desktop
-2. Update the Claude Desktop configuration file (`claude_desktop_config.json`) and add this to your servers section:
+2. Update the Claude Desktop configuration file (`claude_desktop_config.json`) and add this to your servers section.
+
+For local launches started under a user account that is already authenticated with `semgrep login`, the Semgrep CLI may be able to reuse that login. For desktop-managed or shared environments, we still recommend setting `SEMGREP_APP_TOKEN` explicitly:
 
 ```json
 {
