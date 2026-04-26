@@ -18,10 +18,14 @@ ENV MCP_SERVER_SEMGREP_ALLOWED_ROOTS=/workspace:/app
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates git python3 python3-pip \
-  && rm -rf /var/lib/apt/lists/* \
-  && pip3 install --no-cache-dir --break-system-packages "semgrep==${SEMGREP_VERSION}" \
-  && semgrep --version
+  && apt-get install -y --no-install-recommends ca-certificates curl git \
+  && curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR="/usr/local/bin" sh \
+  && uv python install 3.12 \
+  && uv tool install --python 3.12 "semgrep==${SEMGREP_VERSION}" \
+  && ln -sf /root/.local/bin/semgrep /usr/local/bin/semgrep \
+  && semgrep --version \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --omit=optional --ignore-scripts \

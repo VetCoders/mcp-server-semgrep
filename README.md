@@ -1,5 +1,6 @@
 # MCP Server Semgrep
 [![smithery badge](https://smithery.ai/badge/@VetCoders/mcp-server-semgrep)](https://smithery.ai/server/@VetCoders/mcp-server-semgrep)
+[![mcp-server-semgrep MCP server](https://glama.ai/mcp/servers/VetCoders/mcp-server-semgrep/badges/card.svg)](https://glama.ai/mcp/servers/VetCoders/mcp-server-semgrep)
 ### POWERED BY:
 [![POWERED BY](https://semgrep.dev/docs/img/semgrep-icon-text-horizontal.svg)](https://semgrep.dev)
 
