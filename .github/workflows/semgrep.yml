@@ -19,11 +19,25 @@ jobs:
       contents: read
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
+    - name: Select Python
+      id: python
+      shell: bash
+      run: |
+        if command -v python3 >/dev/null 2>&1; then
+          PYTHON="$(command -v python3)"
+        elif command -v python >/dev/null 2>&1; then
+          PYTHON="$(command -v python)"
+        else
+          echo "Python is required to install Semgrep on this self-hosted runner." >&2
+          exit 1
+        fi
+        "$PYTHON" --version
+        echo "python=$PYTHON" >> "$GITHUB_OUTPUT"
     - name: Install Semgrep
-      run: python3 -m pip install --upgrade pip semgrep
+      run: |
+        "${{ steps.python.outputs.python }}" -m pip --version \
+          || "${{ steps.python.outputs.python }}" -m ensurepip --upgrade
+        "${{ steps.python.outputs.python }}" -m pip install --upgrade pip semgrep
     - name: Run Semgrep
       env:
         SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
