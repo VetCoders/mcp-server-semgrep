@@ -49,7 +49,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/VetCoders/mcp-server-semgrep.git"
+    "url": "git+https://github.com/VetCoders/mcp-server-semgrep.git"
   },
   "license": "MIT",
   "dependencies": {
@@ -71,12 +71,10 @@
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/",
-    "smithery": "https://smithery.ai/server/@VetCoders/mcp-server-semgrep",
-    "mcp": "https://mcp.so/@VetCoders/mcp-server-semgrep"
+    "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "mcp-server-semgrep": "./build/index.js"
+    "mcp-server-semgrep": "build/index.js"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -87,5 +85,9 @@
   "funding": {
     "type": "individual",
     "url": "https://div0.space"
+  },
+  "vetcoders": {
+    "smithery": "https://smithery.ai/server/@VetCoders/mcp-server-semgrep",
+    "mcp": "https://mcp.so/@VetCoders/mcp-server-semgrep"
   }
 }
